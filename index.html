@@ -1,0 +1,541 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Torneo Versus</title>
+    <style>
+        :root {
+            --bg: #0f172a;
+            --surface: #1e293b;
+            --border: #334155;
+            --text: #f1f5f9;
+            --muted: #94a3b8;
+            --accent: #3b82f6;
+            --accent-hover: #2563eb;
+            --gold: #eab308;
+            --red: #ef4444;
+            --green: #22c55e;
+            --radius: 8px;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', 'Segoe UI', system-ui, -apple-system, sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            min-height: 100vh;
+            padding: 32px 16px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            display: flex;
+            flex-direction: column;
+            gap: 48px;
+        }
+
+        /* Header */
+        .header {
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: 2rem;
+            font-weight: 700;
+            letter-spacing: -0.02em;
+            color: var(--text);
+        }
+
+        .header .ronda-info {
+            font-size: 0.9rem;
+            color: var(--muted);
+            margin-top: 4px;
+        }
+
+        /* Current matches */
+        .matches-grid {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 24px;
+            justify-content: center;
+        }
+
+        .match-card {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            padding: 20px 24px;
+            min-width: 260px;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .match-card .match-label {
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            color: var(--muted);
+            text-align: center;
+        }
+
+        .match-card .vs-divider {
+            text-align: center;
+            font-weight: 600;
+            color: var(--muted);
+            font-size: 0.85rem;
+        }
+
+        .btn-player {
+            background: var(--bg);
+            border: 1px solid var(--border);
+            color: var(--text);
+            padding: 10px 16px;
+            border-radius: var(--radius);
+            cursor: pointer;
+            font-size: 0.95rem;
+            font-weight: 500;
+            transition: background 0.15s, border-color 0.15s;
+            width: 100%;
+            text-align: center;
+        }
+
+        .btn-player:hover {
+            background: var(--accent);
+            border-color: var(--accent);
+            color: #fff;
+        }
+
+        .btn-player.selected {
+            background: var(--green);
+            border-color: var(--green);
+            color: #fff;
+            pointer-events: none;
+        }
+
+        .btn-player:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .btn-player.bye {
+            background: var(--accent);
+            border-color: var(--accent);
+            color: #fff;
+            cursor: default;
+        }
+
+        /* Champion result */
+        .champion-banner {
+            background: var(--surface);
+            border: 2px solid var(--gold);
+            border-radius: var(--radius);
+            padding: 32px;
+            text-align: center;
+            display: none;
+        }
+
+        .champion-banner.visible {
+            display: block;
+        }
+
+        .champion-banner .trophy {
+            font-size: 3rem;
+        }
+
+        .champion-banner .name {
+            font-size: 2rem;
+            font-weight: 700;
+            color: var(--gold);
+            margin: 8px 0;
+        }
+
+        /* Bracket tree */
+        .bracket-section {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            padding: 32px 24px;
+            overflow-x: auto;
+        }
+
+        .bracket-section h2 {
+            font-size: 1.1rem;
+            font-weight: 600;
+            margin-bottom: 24px;
+            color: var(--muted);
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        .bracket-tree {
+            display: flex;
+            align-items: flex-start;
+            gap: 32px;
+            min-width: max-content;
+        }
+
+        .bracket-round {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .bracket-round .round-title {
+            font-size: 0.7rem;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            color: var(--muted);
+            margin-bottom: 8px;
+            text-align: center;
+        }
+
+        .bracket-slot {
+            background: var(--bg);
+            border: 1px solid var(--border);
+            border-radius: 4px;
+            padding: 6px 12px;
+            font-size: 0.85rem;
+            min-width: 100px;
+            text-align: center;
+            white-space: nowrap;
+            transition: all 0.2s;
+        }
+
+        .bracket-slot.winner {
+            border-color: var(--gold);
+            color: var(--gold);
+            font-weight: 600;
+        }
+
+        .bracket-slot.eliminated {
+            opacity: 0.35;
+            text-decoration: line-through;
+        }
+
+        .bracket-slot.empty {
+            opacity: 0.2;
+            border-style: dashed;
+        }
+
+        .bracket-connector {
+            display: flex;
+            align-items: center;
+            color: var(--muted);
+            font-size: 1.2rem;
+            font-weight: 700;
+        }
+
+        /* Reset button */
+        .btn-reset {
+            background: transparent;
+            border: 1px solid var(--border);
+            color: var(--muted);
+            padding: 8px 20px;
+            border-radius: var(--radius);
+            cursor: pointer;
+            font-size: 0.85rem;
+            transition: all 0.15s;
+            align-self: center;
+        }
+
+        .btn-reset:hover {
+            border-color: var(--text);
+            color: var(--text);
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>Torneo Versus</h1>
+            <p class="ronda-info" id="rondaInfo">Ronda 1 — Selecciona los ganadores</p>
+        </div>
+
+        <div id="matchesContainer" class="matches-grid"></div>
+
+        <div id="championBanner" class="champion-banner">
+            <div class="trophy">🏆</div>
+            <div class="name" id="championName"></div>
+            <p style="color: var(--muted);">Campeón del torneo</p>
+        </div>
+
+        <button class="btn-reset" id="btnReset">Reiniciar torneo</button>
+
+        <div class="bracket-section">
+            <h2>Mapa del torneo</h2>
+            <div id="bracketTree" class="bracket-tree"></div>
+        </div>
+    </div>
+
+    <script>
+        (function() {
+            const initialPlayers = ["Ángel", "Borja", "Sergio", "Eric", "Oliver", "Diego"];
+
+            // Estado
+            let state = {
+                rounds: [],       // Array de arrays: cada ronda contiene los jugadores que entraron
+                selections: [],   // Array de arrays: ganadores seleccionados en cada partido (índice local)
+                currentRound: 0,
+                finished: false,
+                champion: null
+            };
+
+            // Construir todas las rondas posibles desde el inicio (precomputar el bracket completo)
+            function buildFullBracket(players) {
+                const rounds = [players];
+                let current = players;
+                while (current.length > 1) {
+                    const next = [];
+                    for (let i = 0; i < current.length; i += 2) {
+                        if (i + 1 < current.length) {
+                            next.push(null); // se llenará al seleccionar
+                        } else {
+                            next.push(current[i]); // bye automático
+                        }
+                    }
+                    rounds.push(next);
+                    current = next;
+                }
+                return rounds;
+            }
+
+            // Inicializar estado
+            function initState() {
+                const fullRounds = buildFullBracket([...initialPlayers]);
+                // Llenamos los byes automáticos
+                for (let r = 0; r < fullRounds.length - 1; r++) {
+                    const currentRound = fullRounds[r];
+                    const nextRound = fullRounds[r + 1];
+                    for (let i = 0; i < currentRound.length; i += 2) {
+                        if (i + 1 >= currentRound.length) {
+                            // bye: el jugador pasa directo
+                            const player = currentRound[i];
+                            const targetIndex = Math.floor(i / 2);
+                            nextRound[targetIndex] = player;
+                        }
+                    }
+                }
+                return {
+                    rounds: fullRounds,
+                    selections: fullRounds.slice(0, -1).map(round => {
+                        const numMatches = Math.ceil(round.length / 2);
+                        return new Array(numMatches).fill(null);
+                    }),
+                    currentRound: 0,
+                    finished: false,
+                    champion: null
+                };
+            }
+
+            state = initState();
+
+            // Determinar si la ronda actual ya tiene todas las selecciones hechas
+            function isRoundComplete() {
+                if (state.finished) return true;
+                const roundPlayers = state.rounds[state.currentRound];
+                const numMatches = Math.ceil(roundPlayers.length / 2);
+                const sel = state.selections[state.currentRound];
+                // Los byes ya están asignados en el bracket, pero en selections aparecen como null
+                // Verificamos: si hay un partido con bye (jugador solo), no requiere selección
+                for (let i = 0; i < numMatches; i++) {
+                    const p1 = roundPlayers[i * 2];
+                    const p2 = roundPlayers[i * 2 + 1];
+                    if (p2 === undefined) {
+                        // bye, no necesita selección
+                        continue;
+                    }
+                    if (sel[i] === null) return false;
+                }
+                return true;
+            }
+
+            // Avanzar a la siguiente ronda
+            function advanceRound() {
+                if (state.finished) return;
+
+                const currentPlayers = state.rounds[state.currentRound];
+                const nextRoundPlayers = state.rounds[state.currentRound + 1];
+                const sel = state.selections[state.currentRound];
+                const numMatches = Math.ceil(currentPlayers.length / 2);
+
+                for (let i = 0; i < numMatches; i++) {
+                    const p1 = currentPlayers[i * 2];
+                    const p2 = currentPlayers[i * 2 + 1];
+                    if (p2 === undefined) {
+                        // bye: ya fue asignado en buildFullBracket
+                        continue;
+                    }
+                    const winnerIndex = sel[i];
+                    const winner = winnerIndex === 0 ? p1 : p2;
+                    nextRoundPlayers[i] = winner;
+                }
+
+                state.currentRound++;
+
+                // Verificar si hay campeón
+                if (state.currentRound >= state.rounds.length - 1) {
+                    state.finished = true;
+                    state.champion = state.rounds[state.currentRound][0];
+                }
+            }
+
+            // Manejar selección de ganador
+            function selectWinner(matchIndex, playerLocalIndex) {
+                if (state.finished) return;
+                if (state.selections[state.currentRound][matchIndex] !== null) return; // ya seleccionado
+
+                state.selections[state.currentRound][matchIndex] = playerLocalIndex;
+
+                render();
+
+                if (isRoundComplete()) {
+                    // Pequeño delay para que se vea la selección
+                    setTimeout(() => {
+                        advanceRound();
+                        render();
+                    }, 400);
+                }
+            }
+
+            // Renderizar todo
+            function render() {
+                renderMatches();
+                renderChampionBanner();
+                renderBracket();
+                updateRondaInfo();
+            }
+
+            function updateRondaInfo() {
+                const info = document.getElementById('rondaInfo');
+                if (state.finished) {
+                    info.textContent = 'Torneo finalizado';
+                } else {
+                    info.textContent = `Ronda ${state.currentRound + 1} de ${state.rounds.length - 1} — Selecciona los ganadores`;
+                }
+            }
+
+            function renderMatches() {
+                const container = document.getElementById('matchesContainer');
+                if (state.finished) {
+                    container.innerHTML = '';
+                    return;
+                }
+
+                const players = state.rounds[state.currentRound];
+                const sel = state.selections[state.currentRound];
+                const numMatches = Math.ceil(players.length / 2);
+
+                let html = '';
+                for (let i = 0; i < numMatches; i++) {
+                    const p1 = players[i * 2];
+                    const p2 = players[i * 2 + 1];
+                    const selected = sel[i];
+
+                    if (p2 === undefined) {
+                        // Bye
+                        html += `
+                            <div class="match-card">
+                                <div class="match-label">Partido ${i + 1} — Pase directo</div>
+                                <button class="btn-player bye">${p1} → Avanza</button>
+                            </div>`;
+                    } else {
+                        html += `
+                            <div class="match-card">
+                                <div class="match-label">Partido ${i + 1}</div>
+                                <button class="btn-player ${selected === 0 ? 'selected' : ''}"
+                                    ${selected !== null ? 'disabled' : ''}
+                                    data-match="${i}" data-player="0">${p1}</button>
+                                <div class="vs-divider">VS</div>
+                                <button class="btn-player ${selected === 1 ? 'selected' : ''}"
+                                    ${selected !== null ? 'disabled' : ''}
+                                    data-match="${i}" data-player="1">${p2}</button>
+                            </div>`;
+                    }
+                }
+                container.innerHTML = html;
+
+                // Event listeners
+                container.querySelectorAll('.btn-player[data-match]').forEach(btn => {
+                    btn.addEventListener('click', function() {
+                        const match = parseInt(this.dataset.match);
+                        const player = parseInt(this.dataset.player);
+                        selectWinner(match, player);
+                    });
+                });
+            }
+
+            function renderChampionBanner() {
+                const banner = document.getElementById('championBanner');
+                const name = document.getElementById('championName');
+                if (state.finished && state.champion) {
+                    banner.classList.add('visible');
+                    name.textContent = state.champion;
+                } else {
+                    banner.classList.remove('visible');
+                }
+            }
+
+            function renderBracket() {
+                const tree = document.getElementById('bracketTree');
+                // Mostramos todas las rondas precomputadas
+                let html = '';
+                for (let r = 0; r < state.rounds.length; r++) {
+                    const round = state.rounds[r];
+                    html += '<div class="bracket-round">';
+                    html += `<div class="round-title">${r === state.rounds.length - 1 ? 'Campeón' : 'Ronda ' + (r + 1)}</div>`;
+
+                    for (let i = 0; i < round.length; i++) {
+                        const player = round[i];
+                        let cls = 'bracket-slot';
+                        if (player === null) {
+                            cls += ' empty';
+                            html += `<div class="${cls}">—</div>`;
+                        } else {
+                            // Determinar si fue eliminado
+                            if (r < state.rounds.length - 1) {
+                                const nextRound = state.rounds[r + 1];
+                                const targetIndex = Math.floor(i / 2);
+                                const advanced = nextRound[targetIndex];
+                                if (advanced === player) {
+                                    cls += ' winner';
+                                } else if (advanced !== null && advanced !== player) {
+                                    cls += ' eliminated';
+                                } else if (r < state.currentRound) {
+                                    // La ronda ya pasó y este jugador no está en la siguiente
+                                    cls += ' eliminated';
+                                }
+                            }
+                            if (r === state.rounds.length - 1 && player) {
+                                cls += ' winner';
+                            }
+                            html += `<div class="${cls}">${player}</div>`;
+                        }
+                    }
+                    html += '</div>';
+                    if (r < state.rounds.length - 1) {
+                        html += '<div class="bracket-connector">→</div>';
+                    }
+                }
+                tree.innerHTML = html;
+            }
+
+            // Reset
+            document.getElementById('btnReset').addEventListener('click', () => {
+                state = initState();
+                render();
+            });
+
+            // Initial render
+            render();
+        })();
+    </script>
+</body>
+</html>
