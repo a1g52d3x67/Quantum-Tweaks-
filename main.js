@@ -3,7 +3,7 @@ const REPO_OWNER = "dcvxk";
 const REPO_NAME = "Yuan24-7.github.io";
 const FILE_PATH = "productos.json";
 
-const STORAGE_TOKEN_KEY = 'github_token_yuanbot';
+const STORAGE_TOKEN_KEY = 'github_token';
 
 let GITHUB_TOKEN = null;
 let botActive = false;
